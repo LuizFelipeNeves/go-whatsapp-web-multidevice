@@ -86,7 +86,7 @@ SERVER_URL=http://localhost:3000
 1. **Access API**: http://localhost:3000
 2. **Login**: `POST /api/auth/login`
 3. **Register Device**: `POST /api/devices`
-4. **Get QR Code**: `GET /api/login` with `deviceHash` header
+4. **Get QR Code**: `GET /api/login` with `x-instance-id` header
 
 ## 📖 Documentation
 
@@ -128,7 +128,7 @@ curl -X POST http://localhost:3000/api/devices \
 # Get QR code for device connection
 curl -X GET http://localhost:3000/api/login \
   -H "Authorization: Bearer <token>" \
-  -H "deviceHash: a1b2c3d4e5f67890"
+  -H "x-instance-id: a1b2c3d4e5f67890"
 
 # Response: {"qrCode": "data:image/png;base64,iVBORw0KGgoA..."}
 ```
@@ -139,7 +139,7 @@ curl -X GET http://localhost:3000/api/login \
 # Send text message
 curl -X POST http://localhost:3000/api/send/message \
   -H "Authorization: Bearer <token>" \
-  -H "deviceHash: a1b2c3d4e5f67890" \
+  -H "x-instance-id: a1b2c3d4e5f67890" \
   -H "Content-Type: application/json" \
   -d '{
     "phone": "+5511999999999@s.whatsapp.net",
@@ -149,7 +149,7 @@ curl -X POST http://localhost:3000/api/send/message \
 # Send image
 curl -X POST http://localhost:3000/api/send/image \
   -H "Authorization: Bearer <token>" \
-  -H "deviceHash: a1b2c3d4e5f67890" \
+  -H "x-instance-id: a1b2c3d4e5f67890" \
   -H "Content-Type: application/json" \
   -d '{
     "phone": "+5511999999999@s.whatsapp.net",
@@ -198,7 +198,7 @@ curl http://localhost:3000/api/health
 curl http://localhost:3000/api/health/detailed
 
 # Device status
-curl -H "deviceHash: a1b2c3d4e5f67890" \
+curl -H "x-instance-id: a1b2c3d4e5f67890" \
      http://localhost:3000/api/devices/info
 ```
 

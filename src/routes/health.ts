@@ -138,7 +138,7 @@ router.get('/devices', asyncHandler(async (req: Request, res: Response) => {
       }
 
       deviceChecks[deviceHash] = {
-        status: (device as any).status === 'active' && processReachable ? 'healthy' : 'unhealthy',
+        status: ['active', 'connected'].includes((device as any).status) && processReachable ? 'healthy' : 'unhealthy',
         device: {
           status: (device as any).status,
           lastActivity: (device as any).lastActivity,
@@ -291,7 +291,7 @@ router.post('/auto-heal', asyncHandler(async (req: Request, res: Response) => {
     try {
       switch (service) {
         case 'processes':
-          const devices = await deviceManager.getDevicesByStatus('active');
+          const devices = await deviceManager.getDevicesByStatus(['active', 'connected']);
           let healedProcesses = 0;
           
           for (const device of devices) {

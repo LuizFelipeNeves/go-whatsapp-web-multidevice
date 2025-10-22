@@ -18,9 +18,9 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { status, limit, offset } = req.query;
 
   let devices;
-  const statusStr = typeof status === 'string' ? status : Array.isArray(status) ? status[0] : undefined;
+  const statusStr = status as string[];
   if (statusStr) {
-    devices = await deviceManager.getDevicesByStatus(statusStr as string);
+    devices = await deviceManager.getDevicesByStatus(statusStr);
   } else {
     devices = await deviceManager.getAllDevices();
   }
