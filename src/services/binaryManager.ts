@@ -94,9 +94,9 @@ class BinaryManager {
             // Process is dead - try to restart if session files exist
             await this.restartSessionIfExists(device);
           }
-        } else if (device.status === 'active') {
-          logger.info(`Dispositivo ${device.deviceHash} marcado como ativo sem processo, tentando reiniciar...`);
-          // Device is marked as active but has no process - try to restart
+        } else if (device.status === 'active' || device.status === 'connected') {
+          logger.info(`Dispositivo ${device.deviceHash} marcado como ${device.status} sem processo, tentando reiniciar...`);
+          // Device is marked as active/connected but has no process - try to restart
           await this.restartSessionIfExists(device);
         } else if (device.status === 'error' || device.status === 'stopped') {
           logger.info(`Dispositivo ${device.deviceHash} com status ${device.status}, verificando se há sessão existente...`);
@@ -123,34 +123,29 @@ class BinaryManager {
       // Determinar se estamos usando banco de dados externo
       const usingExternalDB = !!process.env.DB_URI;
       
-      // Se estiver usando banco de dados externo, devemos sempre reiniciar o processo
-      // independentemente da existência do arquivo local whatsapp.db
+      // DB externo: sempre reinicia o processo
       if (usingExternalDB) {
-        logger.info(`Usando banco de dados externo para ${device.deviceHash}, reiniciando automaticamente...`);
-        
-        // Restart the process
+        logger.info(`Usando banco de dados externo para ${device.deviceHash}, reiniciando processo...`);
         await this.startProcess(device.deviceHash);
         logger.info(`Processo reiniciado automaticamente para ${device.deviceHash} (DB externo)`);
         return;
       }
       
-      // Caso não esteja usando banco externo, verificar se o arquivo local existe
-      const fs = require('fs').promises;
+      // DB local: se estava ativo/conectado, iniciar processo mesmo sem sessão local
+      if (device.status === 'active' || device.status === 'connected') {
+        logger.info(`Dispositivo ${device.deviceHash} estava '${device.status}', iniciando processo mesmo sem sessão local`);
+        await this.startProcess(device.deviceHash);
+        return;
+      }
+      
+      // Para stopped/error: iniciar apenas se sessão local existir
       try {
         await fs.access(sessionDbPath);
-        logger.info(`Sessão existente detectada para ${device.deviceHash}, reiniciando automaticamente...`);
-        
-        // Restart the process
+        logger.info(`Sessão local detectada para ${device.deviceHash}, reiniciando...`);
         await this.startProcess(device.deviceHash);
-        logger.info(`Processo reiniciado automaticamente para ${device.deviceHash}`);
-        
-      } catch (accessError) {
-        // Session doesn't exist, just update status to stopped
-        logger.info(`Nenhuma sessão existente para ${device.deviceHash}, marcando como parado`);
-        await deviceManager.updateDevice(device.deviceHash, {
-          processId: null,
-          status: 'stopped'
-        });
+      } catch {
+        logger.info(`Sessão local não encontrada para ${device.deviceHash}; mantendo status '${device.status || 'stopped'}'`);
+        // não alterar status aqui; manter o existente
       }
     } catch (error) {
       logger.error(`Erro ao tentar reiniciar sessão para ${device.deviceHash}:`, error);
