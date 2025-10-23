@@ -78,6 +78,9 @@ const proxyToActiveDevice = asyncHandler(async (req: Request, res: Response, nex
   const containerPort = device.containerInfo.port;
   const targetUrl = `http://localhost:${containerPort}${req.originalUrl.replace('/api', '')}`;
 
+  // Only pass-through for specific routes that need additional processing
+  const isLoginRoute = req.path === '/app/login';
+
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Basic ${Buffer.from(`${DEFAULT_ADMIN_USER}:${DEFAULT_ADMIN_PASS}`).toString('base64')}`
@@ -104,8 +107,8 @@ const proxyToActiveDevice = asyncHandler(async (req: Request, res: Response, nex
       data: response.data
     };
 
-    // If there's a next middleware, call it; otherwise send the response
-    if (next) {
+    // Pass-through only for login route, otherwise respond directly
+    if (isLoginRoute && next) {
       next();
     } else {
       res.status(response.status).json(response.data);
@@ -118,11 +121,12 @@ const proxyToActiveDevice = asyncHandler(async (req: Request, res: Response, nex
       logger.warn(`Container error for device ${instanceId}: ${err.response.status} - ${JSON.stringify(err.response.data)}`);
       
       // Store error response in request or send directly
-      if (next) {
-        (req as any).proxyResponse = {
-          status: err.response.status,
-          data: err.response.data
-        };
+      (req as any).proxyResponse = {
+        status: err.response.status,
+        data: err.response.data
+      };
+
+      if (isLoginRoute && next) {
         next();
       } else {
         res.status(err.response.status).json(err.response.data);
